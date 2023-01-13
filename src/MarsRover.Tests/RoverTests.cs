@@ -1,3 +1,4 @@
+using System.Collections;
 using MarsRover.Exceptions;
 
 namespace MarsRover.Tests;
@@ -91,7 +92,9 @@ public class RoverTests
     public void WhenValidCommand_MoveAndTurnRover(string command, string initialDirection, int expectedX, int expectedY,
         string expectedDirection)
     {
-        var rover = CreateSut(0, 0, initialDirection);
+        var obstacles = new List<Position>{new(1,1)};
+        var marsMap = new MarsMap(obstacles);
+        var rover = CreateSut(0, 0, initialDirection,marsMap);
         
         var (position, direction) = rover.Move(command);
         
@@ -99,9 +102,114 @@ public class RoverTests
         Assert.That(position.Y, Is.EqualTo(expectedY));
         Assert.That(direction.Value, Is.EqualTo(expectedDirection));
     }
-    
-    private static Rover CreateSut(int x, int y, string direction)
+
+    [TestCaseSource(nameof(GetMapEdgeTestCases))]
+    public void WhenIsOnTheEdge_MoveRoverForward(string command, string initialDirection, Position initialPosition, Position expectedPosition)
     {
-        return new Rover(x, y, direction);
+        var rover = CreateSut(initialPosition.X, initialPosition.Y, initialDirection);
+
+        var (position, direction) = rover.Move(command);
+        
+        Assert.That(position,Is.EqualTo(expectedPosition));
+        Assert.That(direction.Value,Is.EqualTo(initialDirection));
+    }
+
+    [Test]
+    public void WhenObstacleDetected_MoveToTheLastPoint()
+    {
+        var obstacles = new List<Position>{new(1,1)};
+        var marsMap = new MarsMap(obstacles);
+        
+        var rover = new Rover(0, 0, "N", marsMap);
+
+        var (position, direction) = rover.Move("FRFF");
+        
+        Assert.That(position,Is.EqualTo(new Position(0,1)));
+        Assert.That(direction.Value, Is.EqualTo("E"));
+    }
+    
+    [Test]
+    public void WhenObstacleListDetected_StopAndReportPosition()
+    {
+        var obstacles = new List<Position> { new(1, 4), new(3,5), new (7,4), new (6,5) };
+        var marsMap = new MarsMap(obstacles);
+        var rover = new Rover(4, 2, "E", marsMap);
+
+        var (position, direction) = rover.Move("FLFFFRFLB");
+        
+        Assert.That(position.X,Is.EqualTo(5));
+        Assert.That(position.Y,Is.EqualTo(5));
+    }
+
+    private static IEnumerable GetMapEdgeTestCases()
+    {
+        yield return new object[]
+        {
+            "F",
+            "N",
+            new Position(0,10),
+            new Position(0, -10)
+        };
+        yield return new object[]
+        {
+            "FF",
+            "N",
+            new Position(0,10),
+            new Position(0, -9)
+        };
+        yield return new object[]
+        {
+            "F",
+            "E",
+            new Position(10,0),
+            new Position(-10, 0)
+        };
+        yield return new object[]
+        {
+            "F",
+            "S",
+            new Position(0,-10),
+            new Position(0, 10)
+        };
+        yield return new object[]
+        {
+            "F",
+            "W",
+            new Position(-10,0),
+            new Position(10, 0)
+        };
+        yield return new object[]
+        {
+            "B",
+            "S",
+            new Position(0, 10),
+            new Position(0, -10)
+        };
+        yield return new object[]
+        {
+            "B",
+            "W",
+            new Position(10, 0),
+            new Position(-10, -0)
+        };
+        yield return new object[]
+        {
+            "B",
+            "N",
+            new Position(0, -10),
+            new Position(0, 10)
+        };
+        yield return new object[]
+        {
+            "B",
+            "E",
+            new Position(-10, 0),
+            new Position(10, 0)
+        };
+    }
+
+    private static Rover CreateSut(int x, int y, string direction, MarsMap? marsMap=null)
+    {
+        return new Rover(x, y, direction, marsMap??new MarsMap(new List<Position>()));
     }
 }

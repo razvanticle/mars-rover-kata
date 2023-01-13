@@ -2,12 +2,14 @@
 
 public class Rover
 {
+    private readonly MarsMap marsMap;
     public Direction Direction { get; private set; }
 
     public Position Position { get; private set; }
 
-    public Rover(int x, int y, string direction)
+    public Rover(int x, int y, string direction, MarsMap marsMap)
     {
+        this.marsMap = marsMap;
         Position = new Position(x, y);
         Direction = new Direction(direction);
     }
@@ -19,10 +21,10 @@ public class Rover
             switch (c)
             {
                 case 'F':
-                    Position = MoveForward();
+                    Position = marsMap.GetNextPosition(Direction, Position, 1);
                     break;
                 case 'B':
-                    Position = MoveBackward();
+                    Position = marsMap.GetNextPosition(Direction, Position, -1);
                     break;
                 case 'R':
                     Direction = Direction.GetRight();
@@ -34,29 +36,5 @@ public class Rover
         }
         
         return (Position, Direction);
-    }
-
-    private Position MoveBackward()
-    {
-        return Direction.Value switch
-        {
-            "N" => new Position(Position.X, Position.Y - 1),
-            "E" => new Position(Position.X - 1, Position.Y),
-            "S" => new Position(Position.X, Position.Y + 1),
-            "W" => new Position(Position.X + 1, Position.Y),
-            _ => Position
-        };
-    }
-
-    private Position MoveForward()
-    {
-        return Direction.Value switch
-        {
-            "N" => new Position(Position.X, Position.Y + 1),
-            "E" => new Position(Position.X + 1, Position.Y),
-            "S" => new Position(Position.X, Position.Y - 1),
-            "W" => new Position(Position.X - 1, Position.Y),
-            _ => Position
-        };
     }
 }
